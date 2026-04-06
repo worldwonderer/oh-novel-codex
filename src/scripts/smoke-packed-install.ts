@@ -105,7 +105,7 @@ async function main(): Promise<void> {
 
   let tarballPath: string | undefined;
   try {
-    const packed = run(npmCommand(), ['pack'], repoRoot);
+    const packed = run(npmCommand(), ['pack', '--ignore-scripts'], repoRoot);
     const packedStdout = typeof packed.stdout === 'string' ? packed.stdout : String(packed.stdout);
     const tarballName = resolveTarballName(packedStdout);
     if (!tarballName) {
