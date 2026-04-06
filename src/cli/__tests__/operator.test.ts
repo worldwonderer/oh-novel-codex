@@ -179,7 +179,7 @@ test('notify-hook writes hook state and can trigger auto-watch tick', async () =
   };
 
   const child = spawn(process.execPath, ['dist/cli/onx.js', 'notify-hook', '--project', root, '--auto-watch', '--resume-untracked', '--dry-run'], {
-    cwd: '/Users/pite/skills/oh-novel-codex',
+    cwd: process.cwd(),
     stdio: ['pipe', 'ignore', 'pipe'],
     env: process.env,
   });
@@ -211,7 +211,7 @@ test('notify-hook can ensure a fallback watcher process path', async () => {
   };
 
   const child = spawn(process.execPath, ['dist/cli/onx.js', 'notify-hook', '--project', root, '--ensure-watcher', '--watcher-once', '--watcher-dry-run'], {
-    cwd: '/Users/pite/skills/oh-novel-codex',
+    cwd: process.cwd(),
     stdio: ['pipe', 'ignore', 'pipe'],
     env: process.env,
   });
