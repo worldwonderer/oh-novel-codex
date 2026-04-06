@@ -21,6 +21,7 @@ export const DOCS_SECTIONS: readonly DocsSection[] = [
     title: 'Getting started',
     entries: [
       { title: 'Getting started', path: './getting-started.md' },
+      { title: 'Zhihu remix automation showcase', path: './showcase-zhihu-remix-automation.md' },
       { title: 'CLI reference', path: './cli.md' },
       { title: 'Release process', path: './release-process.md' },
     ],

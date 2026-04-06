@@ -32,6 +32,11 @@ For rewrite-heavy work:
 $zhihu-remix "structurally remix this source story into a low-similarity 8k–12k finished draft"
 ```
 
+## Practical demo
+
+Want a concrete, end-to-end example? Start with the
+[Zhihu remix automation showcase](./docs/showcase-zhihu-remix-automation.md).
+
 ## Quick start
 
 ### Requirements

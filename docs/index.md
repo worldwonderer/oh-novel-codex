@@ -5,6 +5,7 @@ Start here when you need the shortest path to the right ONX document.
 ## Getting started
 
 - [Getting started](./getting-started.md)
+- [Zhihu remix automation showcase](./showcase-zhihu-remix-automation.md)
 - [CLI reference](./cli.md)
 - [Release process](./release-process.md)
 
