@@ -63,6 +63,10 @@ function npmBinName(name: string): string {
   return process.platform === 'win32' ? `${name}.cmd` : name;
 }
 
+function npmCommand(): string {
+  return process.platform === 'win32' ? 'npm.cmd' : 'npm';
+}
+
 function runJson(cmd: string, args: readonly string[], cwd: string): unknown {
   const result = run(cmd, args, cwd);
   const stdout = typeof result.stdout === 'string' ? result.stdout : String(result.stdout);
@@ -83,7 +87,7 @@ async function main(): Promise<void> {
 
   let tarballPath: string | undefined;
   try {
-    const packed = run('npm', ['pack', '--json'], repoRoot);
+    const packed = run(npmCommand(), ['pack', '--json'], repoRoot);
     const packedStdout = typeof packed.stdout === 'string' ? packed.stdout : String(packed.stdout);
     const jsonStart = packedStdout.indexOf('[');
     if (jsonStart === -1) {
@@ -97,7 +101,7 @@ async function main(): Promise<void> {
     }
 
     tarballPath = join(repoRoot, tarballName);
-    run('npm', ['install', '-g', tarballPath, '--prefix', prefixDir], repoRoot);
+    run(npmCommand(), ['install', '-g', tarballPath, '--prefix', prefixDir], repoRoot);
 
     const onxPath = join(prefixDir, process.platform === 'win32' ? '' : 'bin', npmBinName('onx'));
     for (const argv of PACKED_INSTALL_SMOKE_CORE_COMMANDS) {
