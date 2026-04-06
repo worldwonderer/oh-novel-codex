@@ -15,7 +15,7 @@ test('ci workflow runs build, lint, test, and packed-install smoke gates', () =>
   assert.match(workflow, /packed-install-smoke:/);
   assert.match(workflow, /needs:\s*\[quality\]/);
   assert.match(workflow, /strategy:\s*\n\s*fail-fast:\s*false\s*\n\s*matrix:/);
-  assert.match(workflow, /os:\s*\[ubuntu-latest, macos-latest, windows-latest\]/);
+  assert.match(workflow, /os:\s*\[ubuntu-latest, macos-latest\]/);
   assert.match(workflow, /runs-on:\s*\$\{\{\s*matrix\.os\s*\}\}/);
   assert.match(workflow, /actions\/checkout@v5/);
   assert.match(workflow, /actions\/setup-node@v6/);

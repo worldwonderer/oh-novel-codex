@@ -29,7 +29,7 @@ test('release workflow enforces version sync before cross-platform smoke and npm
   assert.match(workflow, /npm run smoke:packed-install/);
   assert.match(workflow, /npm pack --dry-run/);
   assert.match(workflow, /npm publish --access public --provenance/);
-  assert.match(workflow, /matrix:\s*\n\s*os:\s*\[ubuntu-latest, macos-latest, windows-latest\]/);
+  assert.match(workflow, /matrix:\s*\n\s*os:\s*\[ubuntu-latest, macos-latest\]/);
   assert.match(workflow, /package\.json version/);
   assert.match(workflow, /catalogVersion/);
 });
