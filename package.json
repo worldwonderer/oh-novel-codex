@@ -1,0 +1,64 @@
+{
+  "name": "oh-novel-codex",
+  "version": "0.1.0",
+  "description": "Novel workflow layer for OpenAI Codex CLI",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "onx": "dist/cli/onx.js"
+  },
+  "scripts": {
+    "catalog:check": "node dist/scripts/generate-catalog-docs.js --check",
+    "catalog:generate": "npm run build && node dist/scripts/generate-catalog-docs.js",
+    "docs-index:check": "node dist/scripts/generate-docs-index.js --check",
+    "docs-index:generate": "npm run build && node dist/scripts/generate-docs-index.js",
+    "help:check": "node dist/scripts/generate-cli-docs.js --check",
+    "help:generate": "npm run build && node dist/scripts/generate-cli-docs.js",
+    "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })\"",
+    "build": "npm run clean && tsc && node -e \"require('fs').chmodSync('dist/cli/onx.js', 0o755)\"",
+    "check:no-unused": "tsc -p tsconfig.no-unused.json",
+    "dev": "tsc --watch",
+    "lint": "npm run typecheck && npm run check:no-unused",
+    "prepack": "npm run build",
+    "smoke:packed-install": "npm run build && node dist/scripts/smoke-packed-install.js",
+    "test:node": "node dist/scripts/run-test-files.js dist",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && npm run test:node && npm run catalog:check && npm run help:check && npm run docs-index:check",
+    "setup": "node dist/cli/onx.js setup",
+    "doctor": "node dist/cli/onx.js doctor"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "dist/",
+    "prompts/",
+    "skills/",
+    "templates/",
+    "docs/",
+    "LICENSE",
+    "NOTICE.md"
+  ],
+  "keywords": [
+    "codex",
+    "novel",
+    "fiction",
+    "zhihu",
+    "writing",
+    "workflow"
+  ],
+  "author": "pite",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "typescript": "^5.7.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/worldwonderer/oh-novel-codex.git"
+  },
+  "homepage": "https://github.com/worldwonderer/oh-novel-codex#readme",
+  "bugs": {
+    "url": "https://github.com/worldwonderer/oh-novel-codex/issues"
+  }
+}

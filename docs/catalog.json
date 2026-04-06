@@ -1,0 +1,179 @@
+{
+  "generatedAt": "2026-04-06T03:33:16.227Z",
+  "name": "oh-novel-codex",
+  "version": "0.1.0",
+  "counts": {
+    "promptCount": 9,
+    "skillCount": 11,
+    "activePromptCount": 9,
+    "activeSkillCount": 11,
+    "coreSkillCount": 5
+  },
+  "coreSkills": [
+    "novel-interview",
+    "story-architect",
+    "draft-longform",
+    "review-pipeline",
+    "publish-check"
+  ],
+  "installablePrompts": [
+    "novel-architect",
+    "outline-planner",
+    "scene-writer",
+    "revision-doctor",
+    "character-doctor",
+    "hook-doctor",
+    "ending-killshot-reviewer",
+    "remix-depth-reviewer",
+    "publish-gate-reviewer"
+  ],
+  "installableSkills": [
+    "novel-interview",
+    "story-architect",
+    "draft-longform",
+    "revision-pass",
+    "zhihu-remix",
+    "review-pipeline",
+    "hook-pass",
+    "remix-depth",
+    "ending-killshot",
+    "anti-tool-character",
+    "publish-check"
+  ],
+  "prompts": [
+    {
+      "name": "novel-architect",
+      "category": "planning",
+      "status": "active",
+      "summary": "Design the fiction engine before drafting."
+    },
+    {
+      "name": "outline-planner",
+      "category": "planning",
+      "status": "active",
+      "summary": "Turn the chosen premise into a chapter and beat map."
+    },
+    {
+      "name": "scene-writer",
+      "category": "drafting",
+      "status": "active",
+      "summary": "Write scenes that read well on mobile."
+    },
+    {
+      "name": "revision-doctor",
+      "category": "revision",
+      "status": "active",
+      "summary": "Turn review findings into precise quality repairs."
+    },
+    {
+      "name": "character-doctor",
+      "category": "review",
+      "status": "active",
+      "summary": "Review supporting characters for tool-like behavior."
+    },
+    {
+      "name": "hook-doctor",
+      "category": "review",
+      "status": "active",
+      "summary": "Strengthen the opening and chapter-end pressure."
+    },
+    {
+      "name": "ending-killshot-reviewer",
+      "category": "review",
+      "status": "active",
+      "summary": "Review whether the ending lands a final emotional strike."
+    },
+    {
+      "name": "remix-depth-reviewer",
+      "category": "review",
+      "status": "active",
+      "summary": "Review whether a rewrite is structurally remixed enough."
+    },
+    {
+      "name": "publish-gate-reviewer",
+      "category": "review",
+      "status": "active",
+      "summary": "Perform a ship/no-ship review on a finished draft."
+    }
+  ],
+  "skills": [
+    {
+      "name": "novel-interview",
+      "category": "intake",
+      "status": "active",
+      "summary": "Clarify a fiction brief before drafting.",
+      "core": true
+    },
+    {
+      "name": "story-architect",
+      "category": "planning",
+      "status": "active",
+      "summary": "Shape a fiction premise into a usable architecture.",
+      "core": true
+    },
+    {
+      "name": "draft-longform",
+      "category": "drafting",
+      "status": "active",
+      "summary": "Draft a finished long-form fiction piece.",
+      "core": true
+    },
+    {
+      "name": "revision-pass",
+      "category": "revision",
+      "status": "active",
+      "summary": "Run a targeted fiction revision pass from review findings.",
+      "core": false
+    },
+    {
+      "name": "zhihu-remix",
+      "category": "drafting",
+      "status": "active",
+      "summary": "Rewrite a source story into a low-similarity Zhihu-style finished draft.",
+      "core": false
+    },
+    {
+      "name": "review-pipeline",
+      "category": "review",
+      "status": "active",
+      "summary": "Run a multi-agent fiction review pass on a finished draft or rewrite.",
+      "core": true
+    },
+    {
+      "name": "hook-pass",
+      "category": "review",
+      "status": "active",
+      "summary": "Review a fiction draft's opening and chapter-end pull.",
+      "core": false
+    },
+    {
+      "name": "remix-depth",
+      "category": "review",
+      "status": "active",
+      "summary": "Review a rewrite draft for structural originality.",
+      "core": false
+    },
+    {
+      "name": "ending-killshot",
+      "category": "review",
+      "status": "active",
+      "summary": "Review and sharpen the last pages of a fiction draft.",
+      "core": false
+    },
+    {
+      "name": "anti-tool-character",
+      "category": "review",
+      "status": "active",
+      "summary": "Review important supporting characters for tool-like behavior.",
+      "core": false
+    },
+    {
+      "name": "publish-check",
+      "category": "publish",
+      "status": "active",
+      "summary": "Run a final publish-readiness review on a fiction draft.",
+      "core": true
+    }
+  ],
+  "aliases": []
+}
