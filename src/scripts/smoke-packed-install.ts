@@ -73,6 +73,24 @@ function runJson(cmd: string, args: readonly string[], cwd: string): unknown {
   return JSON.parse(stdout);
 }
 
+function resolveTarballName(stdout: string): string | undefined {
+  const trimmed = stdout.trim();
+  if (!trimmed) return undefined;
+
+  const jsonStart = trimmed.indexOf('[');
+  if (jsonStart !== -1) {
+    try {
+      const packOutput = JSON.parse(trimmed.slice(jsonStart)) as Array<{ filename: string }>;
+      return packOutput[0]?.filename;
+    } catch {
+      // Fall through to plain-text parsing below.
+    }
+  }
+
+  const lines = trimmed.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  return lines.reverse().find((line) => line.endsWith('.tgz'));
+}
+
 async function main(): Promise<void> {
   parseArgs(process.argv.slice(2));
 
@@ -87,17 +105,11 @@ async function main(): Promise<void> {
 
   let tarballPath: string | undefined;
   try {
-    const packed = run(npmCommand(), ['pack', '--json'], repoRoot);
+    const packed = run(npmCommand(), ['pack'], repoRoot);
     const packedStdout = typeof packed.stdout === 'string' ? packed.stdout : String(packed.stdout);
-    const jsonStart = packedStdout.indexOf('[');
-    if (jsonStart === -1) {
-      throw new Error(`npm pack did not return JSON output\n${packedStdout}`);
-    }
-
-    const packOutput = JSON.parse(packedStdout.slice(jsonStart)) as Array<{ filename: string }>;
-    const tarballName = packOutput[0]?.filename;
+    const tarballName = resolveTarballName(packedStdout);
     if (!tarballName) {
-      throw new Error('npm pack did not return a tarball filename');
+      throw new Error(`npm pack did not return a tarball filename\n${packedStdout}`);
     }
 
     tarballPath = join(repoRoot, tarballName);
