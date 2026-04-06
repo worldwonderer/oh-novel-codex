@@ -8,7 +8,7 @@ import { encodeMessage } from '../protocol.js';
 
 test('MCP server handles initialize and tools/list', async () => {
   await fs.mkdtemp(path.join(os.tmpdir(), 'onx-mcp-'));
-  const child = spawn('node', ['dist/cli/onx.js', 'mcp-server', 'all'], {
+  const child = spawn(process.execPath, ['dist/cli/onx.js', 'mcp-server', 'all'], {
     cwd: '/Users/pite/skills/oh-novel-codex',
     stdio: ['pipe', 'pipe', 'pipe'],
     env: process.env,

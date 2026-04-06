@@ -73,7 +73,7 @@ if (count === 0) {
   );
 
   const result = await runMonitoredCommand(
-    ['node', script, marker],
+    [process.execPath, script, marker],
     '',
     {
       projectDir: root,

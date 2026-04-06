@@ -19,8 +19,8 @@ test('release workflow enforces version sync before cross-platform smoke and npm
   assert.match(workflow, /needs:\s*\[verify-version-sync\]/);
   assert.match(workflow, /needs:\s*\[quality\]/);
   assert.match(workflow, /needs:\s*\[smoke-packed-install\]/);
-  assert.match(workflow, /actions\/checkout@v4/);
-  assert.match(workflow, /actions\/setup-node@v4/);
+  assert.match(workflow, /actions\/checkout@v5/);
+  assert.match(workflow, /actions\/setup-node@v6/);
   assert.match(workflow, /node-version:\s*20/);
   assert.match(workflow, /npm ci/);
   assert.match(workflow, /npm run build/);

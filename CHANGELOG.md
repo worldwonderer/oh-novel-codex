@@ -10,14 +10,18 @@ The format is intentionally lightweight:
 
 ## Unreleased
 
+## 0.1.1
+
 ### Added
-- release and CI workflow contract tests
+- GitHub community health files, issue templates, PR template, and repository metadata for first public project launch
+- CI and release workflows with contract tests
 - packed-install smoke coverage for `setup -> doctor -> run-draft -> run-review -> run-workflow`
-- CLI metadata-driven help/docs/README command generation
+- CLI metadata-driven docs, docs index generation, and README/docs navigation sync guards
+- `NOTICE.md` attribution file acknowledging `oh-my-codex`
 
 ### Changed
-- package/install/release guardrails now mirror more of the `oh-my-codex` engineering discipline
-- generated docs and README command snippets now share one CLI metadata source
+- release and packaging guardrails now cover generated docs, package metadata, release docs, and GitHub readiness checks
+- installed workflow smoke now validates real post-install job scaffolding instead of only CLI boot behavior
 
 ## 0.1.0
 
