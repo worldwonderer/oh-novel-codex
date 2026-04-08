@@ -35,11 +35,14 @@ A draft job creates:
 
 - `manifest.json`
 - `brief.md`
+- `story-memory.md`
 - `prompts/`
 - `outputs/architecture.md`
 - `outputs/outline.md`
 - `outputs/draft.md`
 - `handoff/review-brief.md`
+
+If the project already has story-memory entries under `.onx/characters`, `.onx/world`, `.onx/relationships`, `.onx/timeline`, `.onx/voice`, or `.onx/continuity`, ONX snapshots them into the draft job so planning and drafting prompts can preserve continuity.
 
 ## Next step
 

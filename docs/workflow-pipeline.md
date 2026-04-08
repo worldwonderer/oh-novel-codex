@@ -30,11 +30,13 @@ The workflow job records:
 - where the review job lives
 - which draft file reviewers should read
 - how to aggregate the final review verdict
+- publish-readiness scorecards for each completed review pass
 
 ## Default execution order
 
 1. complete the draft job prompts
 2. write the full draft to `outputs/draft.md`
 3. run the review job prompts
-4. aggregate review cards
-5. decide ship / revise
+4. aggregate review cards into scorecard + publish-readiness output
+5. if readiness fails, run revision and re-review
+6. stop only when readiness is green or the loop budget is exhausted

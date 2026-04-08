@@ -1,5 +1,4 @@
-import fs from 'node:fs/promises';
-import { modeStatePath } from '../state/mode-state.js';
+import { clearModeState } from '../state/mode-state.js';
 
 export async function stateClear(args: string[]): Promise<void> {
   const projectDir = readFlagValue(args, '--project') ?? process.cwd();
@@ -15,7 +14,7 @@ export async function stateClear(args: string[]): Promise<void> {
   if (!mode) {
     throw new Error('state-clear requires --mode <name>');
   }
-  await fs.rm(modeStatePath(projectDir, mode), { force: true });
+  await clearModeState(projectDir, mode);
   console.log(`Cleared mode state: ${mode}`);
 }
 

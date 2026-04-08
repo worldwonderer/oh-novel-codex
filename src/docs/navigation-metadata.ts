@@ -22,6 +22,7 @@ export const DOCS_SECTIONS: readonly DocsSection[] = [
     entries: [
       { title: 'Getting started', path: './getting-started.md' },
       { title: 'Zhihu remix automation showcase', path: './showcase-zhihu-remix-automation.md' },
+      { title: 'Story memory + quality gate showcase', path: './showcase-story-memory-quality-gate.md' },
       { title: 'CLI reference', path: './cli.md' },
       { title: 'Release process', path: './release-process.md' },
     ],
@@ -40,6 +41,8 @@ export const DOCS_SECTIONS: readonly DocsSection[] = [
     title: 'Workflow guides',
     entries: [
       { title: 'Draft pipeline', path: './draft-pipeline.md' },
+      { title: 'Story memory & continuity', path: './story-memory.md' },
+      { title: 'Quality engine', path: './quality-engine.md' },
       { title: 'Review pipeline', path: './review-pipeline.md' },
       { title: 'Revision pipeline', path: './revision-pipeline.md' },
       { title: 'Workflow pipeline', path: './workflow-pipeline.md' },
@@ -53,7 +56,7 @@ export const DOCS_SECTIONS: readonly DocsSection[] = [
       { title: 'Agents', path: './agents.md' },
       { title: 'Hooks', path: './hooks.md' },
       { title: 'MCP', path: './mcp.md' },
-      { title: 'State, memory, and trace', path: './state-memory-trace.md' },
+      { title: 'State, memory, story-memory, and trace', path: './state-memory-trace.md' },
       { title: 'Guidance schema', path: './guidance-schema.md' },
       { title: 'Review card contract', path: './review-card-contract.md' },
     ],
@@ -66,6 +69,8 @@ const README_DOC_PATHS = new Set([
   './prompts.md',
   './cli.md',
   './catalog.json',
+  './story-memory.md',
+  './quality-engine.md',
 ]);
 
 export function renderDocsIndexMarkdown(): string {

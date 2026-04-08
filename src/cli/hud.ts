@@ -3,18 +3,18 @@ import { readLeaderAttentionState } from '../runtime/attention.js';
 import { readFallbackWatcherState } from '../runtime/fallback-watcher.js';
 import { readTmuxPaneHealth } from '../runtime/tmux.js';
 import { scanActiveRuntimeHealth } from '../runtime/watchdog.js';
-import { readOmxTeamSummaries } from '../team/omx-visibility.js';
+import { readExternalTeamSummaries } from '../team/external-team-interop.js';
 import { summarizeTrace } from '../trace/reader.js';
 
 export async function hud(args: string[]): Promise<void> {
   const projectDir = readFlagValue(args, '--project') ?? process.cwd();
   const json = args.includes('--json');
 
-  const [states, trace, watchdog, omxTeams, attention] = await Promise.all([
+  const [states, trace, watchdog, externalTeams, attention] = await Promise.all([
     listModeStates(projectDir),
     summarizeTrace(projectDir),
     scanActiveRuntimeHealth(projectDir),
-    readOmxTeamSummaries(projectDir),
+    readExternalTeamSummaries(projectDir),
     readLeaderAttentionState(projectDir),
   ]);
   const fallbackWatcher = await readFallbackWatcherState(projectDir);
@@ -41,7 +41,7 @@ export async function hud(args: string[]): Promise<void> {
     watchdog,
     fallbackWatcher,
     tmuxHealth: tmuxHealth.filter(Boolean),
-    omxTeams,
+    externalTeams,
     attention,
   };
 
@@ -83,10 +83,10 @@ export async function hud(args: string[]): Promise<void> {
     }
   }
 
-  if (omxTeams.length > 0) {
-    lines.push('', '## OMX Teams', '', '| Team | Attention | Tasks | Mailbox |', '| --- | --- | --- | --- |');
-    for (const team of omxTeams) {
-      lines.push(`| ${team.teamName} | ${team.leaderAttentionPending ? 'yes' : 'no'} | p:${team.taskCounts.pending} ip:${team.taskCounts.in_progress} c:${team.taskCounts.completed} dead:${team.deadWorkers} | ${team.leaderMailbox.undelivered}/${team.leaderMailbox.total}${team.leaderMailbox.latestFrom ? ` (${team.leaderMailbox.latestFrom})` : ''} |`);
+  if (externalTeams.length > 0) {
+    lines.push('', '## External team interop', '', '| Runtime | Team | Attention | Tasks | Mailbox |', '| --- | --- | --- | --- | --- |');
+    for (const team of externalTeams) {
+      lines.push(`| ${team.runtimeKind} | ${team.teamName} | ${team.attentionPending ? 'yes' : 'no'} | p:${team.taskCounts.pending} ip:${team.taskCounts.in_progress} c:${team.taskCounts.completed} dead:${team.deadWorkers} | ${team.leaderMailbox.undelivered}/${team.leaderMailbox.total}${team.leaderMailbox.latestFrom ? ` (${team.leaderMailbox.latestFrom})` : ''} |`);
     }
   }
 

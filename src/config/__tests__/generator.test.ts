@@ -20,12 +20,20 @@ test('scaffoldProject seeds operator-ready state and appends .onx/ to .gitignore
   assert.ok(report.createdDirectories.includes('.onx/state/modes'));
   assert.ok(report.createdDirectories.includes('.onx/revisions/jobs'));
   assert.ok(report.createdDirectories.includes('.onx/team/jobs'));
+  assert.ok(report.createdDirectories.includes('.onx/characters'));
+  assert.ok(report.createdDirectories.includes('.onx/timeline'));
+  assert.ok(report.createdDirectories.includes('.onx/continuity'));
+  assert.ok(report.createdFiles.includes('.onx/characters/index.md'));
+  assert.ok(report.createdFiles.includes('.onx/voice/index.md'));
+  assert.ok(report.createdFiles.includes('.onx/continuity/index.md'));
   assert.ok(report.createdDirectories.includes('.onx/reports'));
   assert.deepEqual(memory, {});
   assert.match(notepad, /# ONX Notepad/);
 
   await fs.access(path.join(root, '.onx', 'logs', 'events.jsonl'));
   await fs.access(path.join(root, '.onx', 'workflows', 'jobs'));
+  await fs.access(path.join(root, '.onx', 'characters', 'index.md'));
+  await fs.access(path.join(root, '.onx', 'voice', 'index.md'));
 });
 
 test('describeProjectScaffold reports a healthy scaffold after bootstrap', async () => {

@@ -4,6 +4,7 @@ export async function runDraft(args: string[]): Promise<void> {
   const brief = readFlagValue(args, '--brief');
   const briefPath = readFlagValue(args, '--brief-file');
   const sourcePath = readFlagValue(args, '--source');
+  const sourceOwnership = readFlagValue(args, '--source-ownership') as 'third-party' | 'self-owned' | undefined;
   const projectDir = readFlagValue(args, '--project');
   const jobName = readFlagValue(args, '--job-name');
   const mode = readFlagValue(args, '--mode') as 'draft-longform' | 'zhihu-remix' | undefined;
@@ -15,6 +16,7 @@ export async function runDraft(args: string[]): Promise<void> {
     brief,
     briefPath,
     sourcePath,
+    sourceOwnership,
     projectDir,
     jobName,
     mode,

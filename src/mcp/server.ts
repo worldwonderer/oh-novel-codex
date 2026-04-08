@@ -1,12 +1,20 @@
 import path from 'node:path';
-import { listModeStates, readModeState, resolveLatestModeJob } from '../state/mode-state.js';
+import { clearModeState, listModeStates, readModeState, resolveLatestModeJob } from '../state/mode-state.js';
 import { appendManual, appendWorking, readNotepad, writePriority } from '../memory/notepad.js';
 import { readProjectMemory, writeProjectMemory } from '../memory/project-memory.js';
+import {
+  buildContinuityReport,
+  listAuthoredStoryMemoryEntries,
+  readStoryMemoryEntry,
+  STORY_MEMORY_COLLECTIONS,
+  type StoryMemoryCollection,
+  writeStoryMemoryEntry,
+} from '../story-memory/store.js';
 import { createTeamJob, executeTeamJob, getTeamStatus } from '../team/runtime.js';
 import { readTrace, summarizeTrace } from '../trace/reader.js';
 import { createMessageParser, encodeMessage, type JsonRpcRequest, type JsonRpcResponse } from './protocol.js';
 
-export type McpSurface = 'all' | 'state' | 'memory' | 'trace' | 'team';
+export type McpSurface = 'all' | 'state' | 'memory' | 'trace' | 'team' | 'story';
 
 type ToolSpec = {
   name: string;
@@ -113,10 +121,11 @@ function buildTools(surface: McpSurface): ToolSpec[] {
     memory: memoryTools(),
     trace: traceTools(),
     team: teamTools(),
+    story: storyTools(),
   };
 
   if (surface === 'all') {
-    return [...groups.state, ...groups.memory, ...groups.trace, ...groups.team];
+    return [...groups.state, ...groups.memory, ...groups.trace, ...groups.team, ...groups.story];
   }
   return groups[surface];
 }
@@ -146,6 +155,22 @@ function stateTools(): ToolSpec[] {
         },
       },
       handler: async (args) => listModeStates(resolveProjectDir(args)),
+    },
+    {
+      name: 'state_clear',
+      description: 'Clear one ONX mode state file.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          mode: { type: 'string' },
+          projectDir: { type: 'string' },
+        },
+        required: ['mode'],
+      },
+      handler: async (args) => {
+        await clearModeState(resolveProjectDir(args), args.mode as any);
+        return { success: true };
+      },
     },
     {
       name: 'state_latest_job',
@@ -368,6 +393,87 @@ function teamTools(): ToolSpec[] {
   ];
 }
 
+function storyTools(): ToolSpec[] {
+  return [
+    {
+      name: 'story_memory_list',
+      description: 'List story-memory entries for one collection.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          projectDir: { type: 'string' },
+          collection: { type: 'string', enum: [...STORY_MEMORY_COLLECTIONS] },
+        },
+        required: ['collection'],
+      },
+      handler: async (args) =>
+        listAuthoredStoryMemoryEntries(resolveProjectDir(args), parseStoryCollection(args.collection)),
+    },
+    {
+      name: 'story_memory_read',
+      description: 'Read one story-memory entry by collection and key.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          projectDir: { type: 'string' },
+          collection: { type: 'string', enum: [...STORY_MEMORY_COLLECTIONS] },
+          key: { type: 'string' },
+        },
+        required: ['collection', 'key'],
+      },
+      handler: async (args) =>
+        readStoryMemoryEntry(
+          resolveProjectDir(args),
+          parseStoryCollection(args.collection),
+          String(args.key),
+        ),
+    },
+    {
+      name: 'story_memory_write',
+      description: 'Write one story-memory entry.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          projectDir: { type: 'string' },
+          collection: { type: 'string', enum: [...STORY_MEMORY_COLLECTIONS] },
+          key: { type: 'string' },
+          content: { type: 'string' },
+        },
+        required: ['collection', 'key', 'content'],
+      },
+      handler: async (args) =>
+        writeStoryMemoryEntry(
+          resolveProjectDir(args),
+          parseStoryCollection(args.collection),
+          String(args.key),
+          String(args.content),
+        ),
+    },
+    {
+      name: 'continuity_report',
+      description: 'Summarize continuity tracker health and warnings.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          projectDir: { type: 'string' },
+          draftPath: { type: 'string' },
+        },
+      },
+      handler: async (args) => buildContinuityReport(resolveProjectDir(args), {
+        draftPath: args.draftPath as string | undefined,
+      }),
+    },
+  ];
+}
+
 function resolveProjectDir(args: Record<string, unknown>): string {
   return path.resolve((args.projectDir as string | undefined) ?? process.cwd());
+}
+
+function parseStoryCollection(value: unknown): StoryMemoryCollection {
+  const collection = String(value ?? '');
+  if (STORY_MEMORY_COLLECTIONS.includes(collection as StoryMemoryCollection)) {
+    return collection as StoryMemoryCollection;
+  }
+  throw new Error(`Unsupported story-memory collection: ${collection}`);
 }

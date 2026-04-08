@@ -74,7 +74,7 @@ test('status and hud surface watchdog problems', async () => {
   assert.equal(parsedHud.watchdog[0].problem, 'untracked');
 });
 
-test('status and hud surface OMX team summaries', async () => {
+test('status and hud surface external team interop summaries', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'onx-status-omx-team-'));
   const teamRoot = path.join(root, '.omx', 'state', 'team', 'demo-team');
   await fs.mkdir(path.join(teamRoot, 'tasks'), { recursive: true });
@@ -87,17 +87,21 @@ test('status and hud surface OMX team summaries', async () => {
   await fs.writeFile(path.join(teamRoot, 'monitor-snapshot.json'), JSON.stringify({ workerAliveByName: { 'worker-1': false } }, null, 2));
 
   const statusJson = await captureStdout(() => status(['--project', root, '--json']));
-  const parsedStatus = JSON.parse(statusJson) as { omxTeams: Array<{ teamName: string; leaderMailbox: { total: number; latestFrom?: string }; leaderAttentionPending: boolean; deadWorkers: number }> };
-  assert.equal(parsedStatus.omxTeams[0].teamName, 'demo-team');
-  assert.equal(parsedStatus.omxTeams[0].leaderMailbox.total, 1);
-  assert.equal(parsedStatus.omxTeams[0].leaderMailbox.latestFrom, 'worker-1');
-  assert.equal(parsedStatus.omxTeams[0].leaderAttentionPending, true);
-  assert.equal(parsedStatus.omxTeams[0].deadWorkers, 1);
+  const parsedStatus = JSON.parse(statusJson) as {
+    externalTeams: Array<{ runtimeKind: string; teamName: string; leaderMailbox: { total: number; latestFrom?: string }; attentionPending: boolean; deadWorkers: number }>;
+  };
+  assert.equal(parsedStatus.externalTeams[0].runtimeKind, 'omx');
+  assert.equal(parsedStatus.externalTeams[0].teamName, 'demo-team');
+  assert.equal(parsedStatus.externalTeams[0].leaderMailbox.total, 1);
+  assert.equal(parsedStatus.externalTeams[0].leaderMailbox.latestFrom, 'worker-1');
+  assert.equal(parsedStatus.externalTeams[0].attentionPending, true);
+  assert.equal(parsedStatus.externalTeams[0].deadWorkers, 1);
 
   const hudJson = await captureStdout(() => hud(['--project', root, '--json']));
-  const parsedHud = JSON.parse(hudJson) as { omxTeams: Array<{ teamName: string; leaderAttentionPending: boolean }> };
-  assert.equal(parsedHud.omxTeams[0].teamName, 'demo-team');
-  assert.equal(parsedHud.omxTeams[0].leaderAttentionPending, true);
+  const parsedHud = JSON.parse(hudJson) as { externalTeams: Array<{ runtimeKind: string; teamName: string; attentionPending: boolean }> };
+  assert.equal(parsedHud.externalTeams[0].runtimeKind, 'omx');
+  assert.equal(parsedHud.externalTeams[0].teamName, 'demo-team');
+  assert.equal(parsedHud.externalTeams[0].attentionPending, true);
 });
 
 test('watchdog --nudge-stalled routes through recovery even without resume flags', async () => {

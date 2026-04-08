@@ -2,12 +2,16 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { aggregateReviewCards, loadReviewCards, renderAggregatedReviewMarkdown } from './aggregate.js';
 import { ensureDir, getRepoRoot } from '../utils/paths.js';
+import { assertPathExists, jobTimestamp, slugifyJobName } from '../utils/job-helpers.js';
+import { sliceNamedRange } from '../utils/phase-range.js';
 import { updateModeState } from '../state/mode-state.js';
 import { initializeReviewState, type ReviewPhase } from './state.js';
 import { promptOutputsMaterialized, runCodexPromptFile } from '../runtime/codex.js';
 import { renderRuntimeSummary } from '../runtime/status.js';
 import type { PromptExecutor, PromptExecutionResult, SandboxMode } from '../runtime/types.js';
 import { dispatchEvent } from '../events/dispatch.js';
+import type { SourceOwnership } from '../draft/types.js';
+import { buildStoryMemorySnapshot } from '../story-memory/store.js';
 
 export const DEFAULT_REVIEWERS = [
   'hook-doctor',
@@ -20,6 +24,7 @@ export const DEFAULT_REVIEWERS = [
 export type ReviewJobOptions = {
   draftPath: string;
   sourcePath?: string;
+  sourceOwnership?: SourceOwnership;
   projectDir?: string;
   jobName?: string;
   reviewers?: string[];
@@ -55,31 +60,36 @@ export async function createReviewJob(options: ReviewJobOptions): Promise<Review
   const projectDir = path.resolve(options.projectDir ?? process.cwd());
   const draftPath = path.resolve(options.draftPath);
   const sourcePath = options.sourcePath ? path.resolve(options.sourcePath) : undefined;
+  const sourceOwnership: SourceOwnership = options.sourceOwnership ?? 'third-party';
   const reviewers = options.reviewers?.length ? options.reviewers : [...DEFAULT_REVIEWERS];
 
-  await assertExists(draftPath, 'draft');
-  if (sourcePath) await assertExists(sourcePath, 'source');
+  await assertPathExists(draftPath, 'draft');
+  if (sourcePath) await assertPathExists(sourcePath, 'source');
 
   const jobsRoot = path.join(projectDir, '.onx', 'reviews', 'jobs');
-  const jobSlug = `${timestamp()}-${slugify(options.jobName ?? path.basename(draftPath, path.extname(draftPath)))}`;
+  const jobSlug = `${jobTimestamp()}-${slugifyJobName(options.jobName ?? path.basename(draftPath, path.extname(draftPath)), 'review-job')}`;
   const jobDir = path.join(jobsRoot, jobSlug);
   const cardsDir = path.join(jobDir, 'cards');
   const promptsDir = path.join(jobDir, 'prompts');
   const finalDir = path.join(jobDir, 'final');
+  const storyMemorySnapshotPath = path.join(jobDir, 'story-memory.md');
 
   await ensureDir(cardsDir);
   await ensureDir(promptsDir);
   await ensureDir(finalDir);
+  await fs.writeFile(storyMemorySnapshotPath, await buildStoryMemorySnapshot(projectDir), 'utf8');
 
   const manifest = {
     createdAt: new Date().toISOString(),
     draftPath,
     sourcePath,
+    sourceOwnership,
     projectDir,
     reviewers,
     cardsDir,
     promptsDir,
     finalDir,
+    storyMemorySnapshotPath,
   };
 
   const manifestPath = path.join(jobDir, 'manifest.json');
@@ -93,16 +103,18 @@ export async function createReviewJob(options: ReviewJobOptions): Promise<Review
       reviewer,
       draftPath,
       sourcePath,
+      sourceOwnership,
       outputPath: path.join(cardsDir, `${reviewer}.md`),
       contractPath,
       templatePath,
+      storyMemorySnapshotPath,
     });
     await fs.writeFile(path.join(promptsDir, `${reviewer}.md`), reviewerPrompt, 'utf8');
   }
 
   await fs.writeFile(
     path.join(jobDir, 'README.md'),
-    buildJobReadme({ draftPath, sourcePath, reviewers, cardsDir, promptsDir, finalDir }),
+    buildJobReadme({ draftPath, sourcePath, sourceOwnership, reviewers, cardsDir, promptsDir, finalDir, storyMemorySnapshotPath }),
     'utf8',
   );
 
@@ -117,7 +129,9 @@ export async function createReviewJob(options: ReviewJobOptions): Promise<Review
     metadata: {
       draftPath,
       sourcePath,
+      sourceOwnership,
       reviewers,
+      storyMemorySnapshotPath,
     },
   });
 
@@ -128,6 +142,7 @@ export async function createReviewJob(options: ReviewJobOptions): Promise<Review
     payload: {
       draftPath,
       sourcePath,
+      sourceOwnership,
       reviewers,
     },
   });
@@ -156,6 +171,7 @@ export async function executeReviewJob(options: ExecuteReviewOptions): Promise<{
     projectDir: string;
     draftPath: string;
     sourcePath?: string;
+    sourceOwnership?: SourceOwnership;
     reviewers: string[];
   };
   const statePath = path.join(jobDir, 'runtime', 'state.json');
@@ -165,7 +181,7 @@ export async function executeReviewJob(options: ExecuteReviewOptions): Promise<{
   }
 
   const state = await (await import('./state.js')).readReviewState(statePath);
-  const selected = sliceReviewPhases(state.phases, options.fromPhase, options.toPhase);
+  const selected = sliceNamedRange(state.phases, options.fromPhase, options.toPhase, 'review phase');
 
   const promptPhases = selected.filter((phase) => phase.promptPath);
   const aggregatePhase = selected.find((phase) => phase.name === 'aggregate');
@@ -338,13 +354,18 @@ export async function aggregateReviewJob(
 ): Promise<string> {
   const resolvedJobDir = path.resolve(jobDir);
   const cardsDir = path.join(resolvedJobDir, 'cards');
-  await assertExists(cardsDir, 'review cards directory');
+  await assertPathExists(cardsDir, 'review cards directory');
   const cards = await loadReviewCards(cardsDir);
   if (cards.length === 0) {
     throw new Error(`No review cards found under ${cardsDir}`);
   }
 
-  const aggregate = aggregateReviewCards(cards);
+  const reviewManifest = JSON.parse(await fs.readFile(path.join(resolvedJobDir, 'manifest.json'), 'utf8')) as {
+    sourceOwnership?: SourceOwnership;
+  };
+  const aggregate = aggregateReviewCards(cards, {
+    sourceOwnership: reviewManifest.sourceOwnership ?? 'third-party',
+  });
   const rendered =
     options.format === 'json'
       ? `${JSON.stringify(aggregate, null, 2)}\n`
@@ -362,23 +383,36 @@ function buildReviewerPrompt(input: {
   reviewer: string;
   draftPath: string;
   sourcePath?: string;
+  sourceOwnership: SourceOwnership;
   outputPath: string;
   contractPath: string;
   templatePath: string;
+  storyMemorySnapshotPath: string;
 }): string {
-  const focus = reviewerFocus(input.reviewer);
+  const focus = reviewerFocus(input.reviewer, input.sourceOwnership);
+  const ownershipInstructions =
+    input.sourceOwnership === 'self-owned'
+      ? [
+          '- The source is author-owned / self-adapted. Do not fail solely because the new version stays close to the source.',
+          '- For self-adaptation, flag source-shadow only when it makes the rewrite feel stale, redundant, or weaker in its new format.',
+        ]
+      : [];
   return [
     `# Review task: ${input.reviewer}`,
     '',
     `Draft: ${input.draftPath}`,
     input.sourcePath ? `Source: ${input.sourcePath}` : 'Source: none provided',
+    `Source ownership: ${input.sourceOwnership}`,
+    `Story memory snapshot: ${input.storyMemorySnapshotPath}`,
     `Output card: ${input.outputPath}`,
     `Contract: ${input.contractPath}`,
     `Template: ${input.templatePath}`,
     '',
     '## Instructions',
     '- Read the draft first.',
+    '- Read the story memory snapshot so you can catch continuity breaks, OOC drift, world-rule violations, and voice drift when present.',
     '- If a source is provided, compare only as needed for remix-depth or rewrite originality checks.',
+    ...ownershipInstructions,
     `- Focus mainly on: ${focus}.`,
     '- Write one review card that follows the ONX review card contract exactly.',
     '- Use clear P0 / P1 / P2 priorities.',
@@ -391,16 +425,20 @@ function buildReviewerPrompt(input: {
 function buildJobReadme(input: {
   draftPath: string;
   sourcePath?: string;
+  sourceOwnership: SourceOwnership;
   reviewers: string[];
   cardsDir: string;
   promptsDir: string;
   finalDir: string;
+  storyMemorySnapshotPath: string;
 }): string {
   return [
     '# ONX review job',
     '',
     `- Draft: ${input.draftPath}`,
     input.sourcePath ? `- Source: ${input.sourcePath}` : '- Source: none',
+    `- Source ownership: ${input.sourceOwnership}`,
+    `- Story memory snapshot: ${input.storyMemorySnapshotPath}`,
     `- Reviewers: ${input.reviewers.join(', ')}`,
     `- Reviewer prompts: ${input.promptsDir}`,
     `- Review cards: ${input.cardsDir}`,
@@ -433,16 +471,7 @@ function buildReviewPhases(jobDir: string, reviewers: string[]): ReviewPhase[] {
   ];
 }
 
-function sliceReviewPhases(phases: ReviewPhase[], fromPhase?: string, toPhase?: string): ReviewPhase[] {
-  const startIndex = fromPhase ? phases.findIndex((phase) => phase.name === fromPhase) : 0;
-  if (startIndex === -1) throw new Error(`Unknown from phase: ${fromPhase}`);
-  const endIndex = toPhase ? phases.findIndex((phase) => phase.name === toPhase) : phases.length - 1;
-  if (endIndex === -1) throw new Error(`Unknown to phase: ${toPhase}`);
-  if (endIndex < startIndex) throw new Error('to phase must come after from phase');
-  return phases.slice(startIndex, endIndex + 1);
-}
-
-function reviewerFocus(reviewer: string): string {
+function reviewerFocus(reviewer: string, sourceOwnership: SourceOwnership): string {
   switch (reviewer) {
     case 'hook-doctor':
       return 'opening pressure, chapter-end pull, and reading momentum';
@@ -451,37 +480,14 @@ function reviewerFocus(reviewer: string): string {
     case 'ending-killshot-reviewer':
       return 'last-page sting, quote line, and emotional aftertaste';
     case 'remix-depth-reviewer':
-      return 'skeleton remix depth, anti-retell checks, and source divergence';
+      return sourceOwnership === 'self-owned'
+        ? 'adaptation-upgrade depth, stale self-shadow, and whether the new version earns its new format'
+        : 'skeleton remix depth, anti-retell checks, and source divergence';
     case 'publish-gate-reviewer':
-      return 'overall ship/no-ship readiness and prioritized fixes';
+      return sourceOwnership === 'self-owned'
+        ? 'overall ship/no-ship readiness for an author-owned adaptation, with publishability weighted above forced distance'
+        : 'overall ship/no-ship readiness and prioritized fixes';
     default:
       return 'the assigned review lane';
   }
-}
-
-async function assertExists(targetPath: string, label: string): Promise<void> {
-  try {
-    await fs.access(targetPath);
-  } catch {
-    throw new Error(`Missing ${label}: ${targetPath}`);
-  }
-}
-
-function slugify(value: string): string {
-  const normalized = value
-    .toLowerCase()
-    .replace(/[^a-z0-9\u4e00-\u9fff]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-  return normalized || 'review-job';
-}
-
-function timestamp(): string {
-  const now = new Date();
-  const yyyy = now.getFullYear();
-  const mm = `${now.getMonth() + 1}`.padStart(2, '0');
-  const dd = `${now.getDate()}`.padStart(2, '0');
-  const hh = `${now.getHours()}`.padStart(2, '0');
-  const mi = `${now.getMinutes()}`.padStart(2, '0');
-  const ss = `${now.getSeconds()}`.padStart(2, '0');
-  return `${yyyy}${mm}${dd}-${hh}${mi}${ss}`;
 }

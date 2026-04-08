@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { aggregateReviewCards, loadReviewCards } from '../review/aggregate.js';
+import type { QualityDimension } from '../review/types.js';
 import { aggregateReviewJob, createReviewJob, executeReviewJob } from '../review/runner.js';
 import { createRevisionJob } from '../revision/runner.js';
 import { executeRevisionJob } from '../revision/execute.js';
@@ -8,6 +9,7 @@ import { promptOutputsMaterialized, runCodexPromptFile } from '../runtime/codex.
 import { renderRuntimeSummary } from '../runtime/status.js';
 import type { PromptExecutor, PromptExecutionResult, SandboxMode } from '../runtime/types.js';
 import { updateModeState } from '../state/mode-state.js';
+import { sliceNamedRange } from '../utils/phase-range.js';
 import { markPhaseCompleted, markPhaseFailed, markPhaseRunning, readWorkflowState, resetPhasesFrom, type WorkflowPhase } from './state.js';
 import { dispatchEvent } from '../events/dispatch.js';
 import { parseChineseLengthRange, verifyDraftLength } from '../verification/verifier.js';
@@ -32,6 +34,9 @@ export type WorkflowExecutionSummary = {
   reviewPhases: PromptExecutionResult[];
   aggregatePath: string;
   qualityShip?: string;
+  overallShip?: string;
+  originalityRisk?: string;
+  publishReadiness?: WorkflowIteration['publishReadiness'];
   iterations?: WorkflowIteration[];
 };
 
@@ -44,7 +49,9 @@ export async function executeWorkflowJob(options: ExecuteWorkflowOptions): Promi
     draftOutputPath: string;
     projectDir: string;
     sourcePath?: string;
+    sourceOwnership?: 'third-party' | 'self-owned';
     qualityLoopMax?: number;
+    publishThresholds?: Partial<Record<QualityDimension, number>>;
     iterations?: WorkflowIteration[];
     reviewCardsDir?: string;
     reviewFinalDir?: string;
@@ -53,6 +60,7 @@ export async function executeWorkflowJob(options: ExecuteWorkflowOptions): Promi
     await fs.readFile(path.join(workflowManifest.draftJobDir, 'manifest.json'), 'utf8'),
   ) as {
     sourcePath?: string;
+    sourceOwnership?: 'third-party' | 'self-owned';
     targetLength?: string;
     outputsDir: string;
   };
@@ -62,7 +70,7 @@ export async function executeWorkflowJob(options: ExecuteWorkflowOptions): Promi
   }
 
   const state = await readWorkflowState(statePath);
-  const selectedPhases = slicePhases(state.phases, options.fromPhase, options.toPhase);
+  const selectedPhases = sliceNamedRange(state.phases, options.fromPhase, options.toPhase, 'workflow phase');
 
   const draftPhases: PromptExecutionResult[] = [];
   const reviewPhases: PromptExecutionResult[] = [];
@@ -107,7 +115,13 @@ export async function executeWorkflowJob(options: ExecuteWorkflowOptions): Promi
         aggregatePath = await aggregateReviewJob(workflowManifest.reviewJobDir, {
           outputPath: path.join(workflowManifest.reviewJobDir, 'final', 'aggregate.md'),
         });
-        finalAggregate = aggregateReviewCards(await loadReviewCards(path.join(workflowManifest.reviewJobDir, 'cards')));
+        finalAggregate = aggregateReviewCards(
+          await loadReviewCards(path.join(workflowManifest.reviewJobDir, 'cards')),
+          {
+            sourceOwnership: workflowManifest.sourceOwnership ?? draftManifest.sourceOwnership ?? 'third-party',
+            publishThresholds: workflowManifest.publishThresholds,
+          },
+        );
         await markPhaseCompleted(statePath, phase.name);
         await dispatchEvent(workflowManifest.projectDir, {
           kind: 'workflow.phase.completed',
@@ -266,20 +280,34 @@ export async function executeWorkflowJob(options: ExecuteWorkflowOptions): Promi
     });
   }
 
-  if (finalAggregate && finalAggregate.qualityShip !== 'ship') {
+  if (finalAggregate) {
+    if (iterations.length > 0) {
+      iterations[iterations.length - 1] = {
+        ...iterations[iterations.length - 1],
+        aggregatePath,
+        compositeScore: finalAggregate.compositeScore,
+        qualityScorecard: finalAggregate.qualityScorecard,
+        publishReadiness: finalAggregate.publishReadiness,
+      };
+    }
+  }
+
+  if (finalAggregate && !finalAggregate.publishReadiness.ready) {
     const loopMax = workflowManifest.qualityLoopMax ?? 2;
     let loopCount = 0;
     let currentDraftPath = workflowManifest.draftOutputPath;
     let currentReviewJobDir = workflowManifest.reviewJobDir;
 
-    while (finalAggregate.qualityShip !== 'ship' && loopCount < loopMax) {
+    while (!finalAggregate.publishReadiness.ready && loopCount < loopMax) {
       loopCount += 1;
+      const revisionFocus = chooseRevisionFocus(finalAggregate);
+      const selectedRevisionStrategy = finalAggregate.recommendedRevisionStrategy;
       const revisionJob = await createRevisionJob({
         draftPath: currentDraftPath,
         reviewJobDir: currentReviewJobDir,
         projectDir: workflowManifest.projectDir,
-        focus: 'quality',
-        jobName: `${path.basename(currentDraftPath, path.extname(currentDraftPath))}-quality-loop-${loopCount}`,
+        focus: revisionFocus,
+        jobName: `${path.basename(currentDraftPath, path.extname(currentDraftPath))}-${revisionFocus}-loop-${loopCount}`,
       });
       await executeRevisionJob({
         jobDir: revisionJob.jobDir,
@@ -288,12 +316,14 @@ export async function executeWorkflowJob(options: ExecuteWorkflowOptions): Promi
         profile: options.profile,
         sandbox: options.sandbox,
         dryRun: options.dryRun,
+        executor,
       });
       currentDraftPath = path.join(revisionJob.outputsDir, 'revised-draft.md');
 
       const reviewJob = await createReviewJob({
         draftPath: currentDraftPath,
         sourcePath: workflowManifest.sourcePath ?? draftManifest.sourcePath,
+        sourceOwnership: workflowManifest.sourceOwnership ?? draftManifest.sourceOwnership ?? 'third-party',
         projectDir: workflowManifest.projectDir,
         jobName: `${path.basename(currentDraftPath, path.extname(currentDraftPath))}-review-loop-${loopCount}`,
       });
@@ -304,19 +334,32 @@ export async function executeWorkflowJob(options: ExecuteWorkflowOptions): Promi
         profile: options.profile,
         sandbox: options.sandbox,
         dryRun: options.dryRun,
+        executor,
       });
 
       currentReviewJobDir = reviewJob.jobDir;
       aggregatePath = await aggregateReviewJob(currentReviewJobDir, {
         outputPath: path.join(reviewJob.finalDir, 'aggregate.md'),
       });
-      finalAggregate = aggregateReviewCards(await loadReviewCards(path.join(currentReviewJobDir, 'cards')));
+      finalAggregate = aggregateReviewCards(
+        await loadReviewCards(path.join(currentReviewJobDir, 'cards')),
+        {
+          sourceOwnership: workflowManifest.sourceOwnership ?? draftManifest.sourceOwnership ?? 'third-party',
+          publishThresholds: workflowManifest.publishThresholds,
+        },
+      );
       iterations.push({
         stage: 'revision',
         draftPath: currentDraftPath,
         reviewJobDir: currentReviewJobDir,
         aggregatePath,
         revisionJobDir: revisionJob.jobDir,
+        revisionFocus,
+        revisionStrategy: selectedRevisionStrategy,
+        postReviewRecommendedStrategy: finalAggregate.recommendedRevisionStrategy,
+        compositeScore: finalAggregate.compositeScore,
+        qualityScorecard: finalAggregate.qualityScorecard,
+        publishReadiness: finalAggregate.publishReadiness,
       });
     }
 
@@ -327,8 +370,10 @@ export async function executeWorkflowJob(options: ExecuteWorkflowOptions): Promi
     workflowManifest.draftOutputPath = currentDraftPath;
     await fs.writeFile(workflowManifestPath, `${JSON.stringify(workflowManifest, null, 2)}\n`, 'utf8');
 
-    if (finalAggregate.qualityShip !== 'ship') {
-      throw new Error(`Workflow quality loop exhausted without ship verdict (final quality ship: ${finalAggregate.qualityShip})`);
+    if (!finalAggregate.publishReadiness.ready) {
+      throw new Error(
+        `Workflow revision loop exhausted without publish-ready verdict (overall ship: ${finalAggregate.overallShip}, failing dimensions: ${finalAggregate.publishReadiness.failingDimensions.join(', ') || 'none'})`,
+      );
     }
   }
 
@@ -338,8 +383,27 @@ export async function executeWorkflowJob(options: ExecuteWorkflowOptions): Promi
     reviewPhases,
     aggregatePath,
     qualityShip: finalAggregate?.qualityShip,
+    overallShip: finalAggregate?.overallShip,
+    originalityRisk: finalAggregate?.originalityRisk,
+    publishReadiness: finalAggregate?.publishReadiness,
     iterations,
   };
+}
+
+function chooseRevisionFocus(aggregate: ReturnType<typeof aggregateReviewCards>): 'quality' | 'all' | 'originality' {
+  if (aggregate.publishReadiness.failingDimensions.includes('originality') && aggregate.sourceOwnership !== 'self-owned') {
+    return 'all';
+  }
+  if (aggregate.recommendedRevisionStrategy === 'structural-rebuild') {
+    return aggregate.sourceOwnership === 'self-owned' ? 'quality' : 'all';
+  }
+  if (aggregate.sourceOwnership === 'self-owned') {
+    if (aggregate.qualityShip !== 'ship') return 'quality';
+    return 'quality';
+  }
+  if (aggregate.originalityRisk === 'high') return 'all';
+  if (aggregate.qualityShip !== 'ship') return 'quality';
+  return 'all';
 }
 
 async function enforceDraftLength(input: {
@@ -420,14 +484,6 @@ function buildLengthRepairPrompt(input: {
   ].join('\n');
 }
 
-function slicePhases(phases: WorkflowPhase[], fromPhase?: string, toPhase?: string): WorkflowPhase[] {
-  const startIndex = fromPhase ? phases.findIndex((phase) => phase.name === fromPhase) : 0;
-  if (startIndex === -1) throw new Error(`Unknown from phase: ${fromPhase}`);
-  const endIndex = toPhase ? phases.findIndex((phase) => phase.name === toPhase) : phases.length - 1;
-  if (endIndex === -1) throw new Error(`Unknown to phase: ${toPhase}`);
-  if (endIndex < startIndex) throw new Error('to phase must come after from phase');
-  return phases.slice(startIndex, endIndex + 1);
-}
 
 export async function getWorkflowStatus(jobDir: string): Promise<string> {
   const statePath = path.join(path.resolve(jobDir), 'runtime', 'state.json');

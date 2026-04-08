@@ -78,6 +78,7 @@ function main() {
     'run-workflow',
     '--mode', 'zhihu-remix',
     '--source', source,
+    '--source-ownership', 'self-owned',
     '--brief-file', briefPath,
     '--project', args.projectDir,
     '--job-name', 'zhihu-remix-automation-showcase',

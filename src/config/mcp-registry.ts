@@ -1,4 +1,4 @@
-export type McpServerSurface = 'all' | 'state' | 'memory' | 'trace' | 'team';
+export type McpServerSurface = 'all' | 'state' | 'memory' | 'trace' | 'team' | 'story';
 
 export function buildMcpConfig(
   surface: McpServerSurface,

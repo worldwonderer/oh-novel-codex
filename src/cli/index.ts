@@ -1,4 +1,5 @@
 import { doctor } from './doctor.js';
+import { continuityReport } from './continuity-report.js';
 import { executeRevision } from './execute-revision.js';
 import { executeReview } from './execute-review.js';
 import { executeWorkflow } from './execute-workflow.js';
@@ -21,6 +22,9 @@ import { revisionStatus } from './revision-status.js';
 import { stateClear } from './state-clear.js';
 import { stateRead } from './state-read.js';
 import { status } from './status.js';
+import { storyList } from './story-list.js';
+import { storyRead } from './story-read.js';
+import { storyWrite } from './story-write.js';
 import { setup } from './setup.js';
 import { teamRun } from './team-run.js';
 import { teamStart } from './team-start.js';
@@ -84,6 +88,18 @@ export async function runCli(argv: string[]): Promise<void> {
           return;
         case 'state-clear':
           await stateClear(args);
+          return;
+        case 'story-list':
+          await storyList(args);
+          return;
+        case 'story-read':
+          await storyRead(args);
+          return;
+        case 'story-write':
+          await storyWrite(args);
+          return;
+        case 'continuity-report':
+          await continuityReport(args);
           return;
         case 'trace':
           await trace(args);

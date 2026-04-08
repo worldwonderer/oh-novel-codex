@@ -9,7 +9,11 @@
    - Prompts: `docs/prompts.md`
    - CLI: `docs/cli.md`
    - JSON contract: `docs/catalog.json`
-6. Start using the included skills from Codex:
+6. Seed story-memory if this project already has recurring characters / world rules:
+   - `onx story-write --collection characters --key heroine --text "# Heroine"`
+   - `onx story-write --collection voice --key default --text "# Default voice"`
+   - `onx continuity-report --project .`
+7. Start using the included skills from Codex:
    - `$novel-interview`
    - `$story-architect`
    - `$draft-longform`

@@ -31,3 +31,5 @@ A revision job creates:
 - `quality` (default): ignore remix-depth as a hard blocker and fix publish quality first
 - `all`: include originality/risk issues too
 - `originality`: focus mainly on structural remix upgrades
+
+Revision jobs also snapshot story-memory so fixes can preserve established character intent, world rules, relationship state, timeline order, voice profile, and open continuity constraints.

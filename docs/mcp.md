@@ -14,6 +14,7 @@ Or a narrower surface:
 onx mcp-server state
 onx mcp-server memory
 onx mcp-server trace
+onx mcp-server story
 ```
 
 ## Supported requests
@@ -39,6 +40,12 @@ onx mcp-server trace
 ### trace
 - `trace_timeline`
 - `trace_summary`
+
+### story
+- `story_memory_list`
+- `story_memory_read`
+- `story_memory_write`
+- `continuity_report`
 
 ## Example stdio usage
 

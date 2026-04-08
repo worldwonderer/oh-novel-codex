@@ -25,5 +25,5 @@ Default lane:
 </workflow>
 
 <state>
-Use `.onx/` for plans, drafts, reviews, revisions, workflows, team state, notes, reports, and logs.
+Use `.onx/` for plans, drafts, reviews, revisions, workflows, team state, story memory (`characters/world/relationships/timeline/voice/continuity`), notes, reports, and logs.
 </state>
