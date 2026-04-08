@@ -198,7 +198,7 @@ test('runFallbackWatcherTick records latest event snapshot when events log exist
   assert.ok(typeof state.lastEventSize === 'number' && state.lastEventSize > 0);
 });
 
-test('runFallbackWatcherTick writes leader attention state from OMX team pressure', async () => {
+test('runFallbackWatcherTick writes leader attention state from external team pressure', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'onx-fallback-attention-'));
   const teamRoot = path.join(root, '.omx', 'state', 'team', 'demo-team');
   await fs.mkdir(path.join(teamRoot, 'tasks'), { recursive: true });
@@ -218,6 +218,6 @@ test('runFallbackWatcherTick writes leader attention state from OMX team pressur
   assert.equal(state.leaderAttentionPending, true);
   const attention = await readLeaderAttentionState(root);
   assert.equal(attention?.needsAttention, true);
-  assert.ok(attention?.summary.some((item) => item.startsWith('omx-team:demo-team')));
+  assert.ok(attention?.summary.some((item) => item.startsWith('external-team:omx:demo-team')));
   await fs.access(leaderAttentionStatePath(root));
 });

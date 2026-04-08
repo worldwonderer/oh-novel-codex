@@ -42,6 +42,8 @@ test('MCP server handles initialize and tools/list', async () => {
   assert.match(output, /project_memory_read/);
   assert.match(output, /trace_summary/);
   assert.match(output, /team_status/);
+  assert.match(output, /story_memory_read/);
+  assert.match(output, /continuity_report/);
 });
 
 async function waitForOutput(chunks: Buffer[], pattern: RegExp, timeoutMs: number): Promise<string> {

@@ -1,6 +1,6 @@
 # Team runtime
 
-ONX team runtime is a lightweight lane coordinator around review jobs. It is **state-driven**, not a persistent OMX-style leader/worker mailbox fabric.
+ONX team runtime is a lightweight lane coordinator around review jobs. It is **state-driven**, not a persistent leader/worker mailbox fabric.
 
 ## Purpose
 
@@ -10,7 +10,7 @@ Use it when:
 - you want lane-level runtime state and resumability
 - you want watchdog / fallback recovery to understand the active lane
 
-Prefer OMX team orchestration instead when you need long-lived tmux workers, leader/worker mailboxes, or per-worker status files.
+Prefer external OMX orchestration only when you need long-lived tmux workers, leader/worker mailboxes, or per-worker status files.
 
 ## Commands
 
@@ -123,4 +123,4 @@ ONX team runtime coordinates **lanes**, not named tmux workers. Today it does **
 - per-worker status registries
 - mailbox delivery / acknowledgement state
 
-That is an intentional scope boundary: ONX team jobs stay lightweight and review-lane-focused. If you need OMX-style leader/worker coordination with mailbox state under `.omx/state/team/...`, layer OMX team orchestration around ONX instead of expecting `.onx/team/...` to expose the same worker protocol.
+That is an intentional scope boundary: ONX team jobs stay lightweight and review-lane-focused. If you need mailbox state from an external OMX runtime under `.omx/state/team/...`, treat it as interop data rather than ONX’s native coordination model.

@@ -4,6 +4,7 @@ import { getInstallablePromptNames, getInstallableSkillNames } from '../catalog/
 import { copyRecursive, ensureDir, getCodexHome, getInstallTargets, getRepoRoot } from '../utils/paths.js';
 import { ensureNotepad, notepadPath } from '../memory/notepad.js';
 import { projectMemoryPath } from '../memory/project-memory.js';
+import { STORY_MEMORY_SCAFFOLD_DIRECTORIES, STORY_MEMORY_SCAFFOLD_FILES, ensureStoryMemoryScaffold } from '../story-memory/store.js';
 
 export type InstallOptions = {
   codexHome?: string;
@@ -24,6 +25,7 @@ export const PROJECT_SCAFFOLD_DIRECTORIES = [
   '.onx/reports',
   '.onx/logs',
   '.onx/state/modes',
+  ...STORY_MEMORY_SCAFFOLD_DIRECTORIES,
 ] as const;
 
 export const PROJECT_SCAFFOLD_FILES = [
@@ -32,6 +34,7 @@ export const PROJECT_SCAFFOLD_FILES = [
   '.onx/notepad.md',
   '.onx/project-memory.json',
   '.onx/logs/events.jsonl',
+  ...STORY_MEMORY_SCAFFOLD_FILES,
 ] as const;
 
 export type ProjectScaffoldReport = {
@@ -127,6 +130,10 @@ export async function scaffoldProject(projectDir: string, options: { force?: boo
     await fs.writeFile(eventsLog, '', 'utf8');
     createdFiles.push('.onx/logs/events.jsonl');
   }
+
+  const storyScaffold = await ensureStoryMemoryScaffold(target);
+  createdDirectories.push(...storyScaffold.createdDirectories.filter((entry) => !createdDirectories.includes(entry)));
+  createdFiles.push(...storyScaffold.createdFiles.filter((entry) => !createdFiles.includes(entry)));
 
   const updatedGitignore = await ensureGitignoreEntry(target, '.onx/');
   if (updatedGitignore) {

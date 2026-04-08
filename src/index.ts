@@ -4,6 +4,7 @@
 
 export { setup } from './cli/setup.js';
 export { doctor } from './cli/doctor.js';
+export { continuityReport } from './cli/continuity-report.js';
 export { executeRevision } from './cli/execute-revision.js';
 export { executeReview } from './cli/execute-review.js';
 export { executeWorkflow } from './cli/execute-workflow.js';
@@ -26,6 +27,9 @@ export { reviewAggregate } from './cli/review-aggregate.js';
 export { stateClear } from './cli/state-clear.js';
 export { stateRead } from './cli/state-read.js';
 export { status } from './cli/status.js';
+export { storyList } from './cli/story-list.js';
+export { storyRead } from './cli/story-read.js';
+export { storyWrite } from './cli/story-write.js';
 export { version } from './cli/version.js';
 export { watchdog } from './cli/watchdog.js';
 export { workflowStatus } from './cli/workflow-status.js';
@@ -69,6 +73,14 @@ export { listModeStates, readModeState, resolveLatestModeJob, updateModeState } 
 export { createTeamJob, executeTeamJob, getTeamStatus } from './team/runtime.js';
 export { appendManual, appendWorking, readNotepad, writePriority } from './memory/notepad.js';
 export { readProjectMemory, writeProjectMemory } from './memory/project-memory.js';
+export {
+  buildContinuityReport,
+  buildStoryMemorySnapshot,
+  ensureStoryMemoryScaffold,
+  listStoryMemoryEntries,
+  readStoryMemoryEntry,
+  writeStoryMemoryEntry,
+} from './story-memory/store.js';
 export { readTrace, summarizeTrace } from './trace/reader.js';
 export { startMcpServer } from './mcp/server.js';
 export { buildMcpConfig } from './config/mcp-registry.js';

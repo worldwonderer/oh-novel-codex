@@ -49,6 +49,10 @@ export async function resolveLatestModeJob(projectDir: string, mode: OnxModeName
   return state?.jobDir ?? null;
 }
 
+export async function clearModeState(projectDir: string, mode: OnxModeName): Promise<void> {
+  await fs.rm(modeStatePath(projectDir, mode), { force: true });
+}
+
 export async function writeModeState(projectDir: string, state: OnxModeState): Promise<void> {
   const target = modeStatePath(projectDir, state.mode);
   await fs.mkdir(path.dirname(target), { recursive: true });

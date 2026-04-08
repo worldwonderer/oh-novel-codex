@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { scanActiveRuntimeHealth } from './watchdog.js';
-import { readOmxTeamSummaries } from '../team/omx-visibility.js';
+import { readExternalTeamSummaries } from '../team/external-team-interop.js';
 
 export type LeaderAttentionState = {
   updatedAt: string;
@@ -12,8 +12,9 @@ export type LeaderAttentionState = {
     problem: string;
     runtime: string;
   }>;
-  omxTeamAlerts: Array<{
+  externalTeamAlerts: Array<{
     teamName: string;
+    runtimeKind: 'omx';
     deadWorkers: number;
     undeliveredLeaderMailbox: number;
     latestFrom?: string;
@@ -23,9 +24,9 @@ export type LeaderAttentionState = {
 };
 
 export async function buildLeaderAttentionState(projectDir: string): Promise<LeaderAttentionState> {
-  const [watchdog, omxTeams] = await Promise.all([
+  const [watchdog, externalTeams] = await Promise.all([
     scanActiveRuntimeHealth(projectDir),
-    readOmxTeamSummaries(projectDir),
+    readExternalTeamSummaries(projectDir),
   ]);
 
   const onxWatchdogAlerts = watchdog
@@ -37,10 +38,11 @@ export async function buildLeaderAttentionState(projectDir: string): Promise<Lea
       runtime: entry.runtime,
     }));
 
-  const omxTeamAlerts = omxTeams
-    .filter((team) => team.leaderAttentionPending)
+  const externalTeamAlerts = externalTeams
+    .filter((team) => team.attentionPending)
     .map((team) => ({
       teamName: team.teamName,
+      runtimeKind: team.runtimeKind,
       deadWorkers: team.deadWorkers,
       undeliveredLeaderMailbox: team.leaderMailbox.undelivered,
       latestFrom: team.leaderMailbox.latestFrom,
@@ -49,14 +51,14 @@ export async function buildLeaderAttentionState(projectDir: string): Promise<Lea
 
   const summary = [
     ...onxWatchdogAlerts.map((entry) => `watchdog:${entry.mode}:${entry.phase}:${entry.problem}`),
-    ...omxTeamAlerts.map((team) => `omx-team:${team.teamName}:dead=${team.deadWorkers}:mailbox=${team.undeliveredLeaderMailbox}`),
+    ...externalTeamAlerts.map((team) => `external-team:${team.runtimeKind}:${team.teamName}:dead=${team.deadWorkers}:mailbox=${team.undeliveredLeaderMailbox}`),
   ];
 
   return {
     updatedAt: new Date().toISOString(),
-    needsAttention: onxWatchdogAlerts.length > 0 || omxTeamAlerts.length > 0,
+    needsAttention: onxWatchdogAlerts.length > 0 || externalTeamAlerts.length > 0,
     onxWatchdogAlerts,
-    omxTeamAlerts,
+    externalTeamAlerts,
     summary,
   };
 }

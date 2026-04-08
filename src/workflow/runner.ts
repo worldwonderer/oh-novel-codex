@@ -2,7 +2,9 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createDraftJob } from '../draft/runner.js';
 import { ensureDir } from '../utils/paths.js';
+import { jobTimestamp, slugifyJobName } from '../utils/job-helpers.js';
 import { createReviewJob } from '../review/runner.js';
+import { defaultPublishReadinessThresholds } from '../review/aggregate.js';
 import { updateModeState } from '../state/mode-state.js';
 import { initializeWorkflowState, type WorkflowPhase, type WorkflowState } from './state.js';
 import type { WorkflowJob, WorkflowJobOptions } from './types.js';
@@ -14,6 +16,7 @@ export async function createWorkflowJob(options: WorkflowJobOptions): Promise<Wo
     brief: options.brief,
     briefPath: options.briefPath,
     sourcePath: options.sourcePath,
+    sourceOwnership: options.sourceOwnership,
     projectDir,
     jobName: options.jobName,
     mode: options.mode,
@@ -24,6 +27,7 @@ export async function createWorkflowJob(options: WorkflowJobOptions): Promise<Wo
 
   const draftManifest = JSON.parse(await fs.readFile(draftJob.manifestPath, 'utf8')) as {
     sourcePath?: string;
+    sourceOwnership?: 'third-party' | 'self-owned';
     outputsDir: string;
     mode: string;
   };
@@ -32,13 +36,14 @@ export async function createWorkflowJob(options: WorkflowJobOptions): Promise<Wo
   const reviewJob = await createReviewJob({
     draftPath: draftOutputPath,
     sourcePath: draftManifest.sourcePath,
+    sourceOwnership: draftManifest.sourceOwnership,
     projectDir,
     jobName: options.jobName ? `${options.jobName}-review` : undefined,
     reviewers: options.reviewers,
   });
 
   const jobsRoot = path.join(projectDir, '.onx', 'workflows', 'jobs');
-  const slug = `${timestamp()}-${slugify(options.jobName ?? options.genre ?? draftManifest.mode)}`;
+  const slug = `${jobTimestamp()}-${slugifyJobName(options.jobName ?? options.genre ?? draftManifest.mode, 'workflow-job')}`;
   const jobDir = path.join(jobsRoot, slug);
   const finalDir = path.join(jobDir, 'final');
   await ensureDir(finalDir);
@@ -48,12 +53,17 @@ export async function createWorkflowJob(options: WorkflowJobOptions): Promise<Wo
     projectDir,
     mode: draftManifest.mode,
     sourcePath: draftManifest.sourcePath,
+    sourceOwnership: draftManifest.sourceOwnership,
     draftJobDir: draftJob.jobDir,
     draftOutputPath,
     reviewJobDir: reviewJob.jobDir,
     reviewCardsDir: reviewJob.cardsDir,
     reviewFinalDir: reviewJob.finalDir,
     qualityLoopMax: 2,
+    publishThresholds: {
+      ...defaultPublishReadinessThresholds(draftManifest.sourceOwnership ?? 'third-party'),
+      ...(options.publishThresholds ?? {}),
+    },
     iterations: [
       {
         stage: 'initial',
@@ -83,6 +93,7 @@ export async function createWorkflowJob(options: WorkflowJobOptions): Promise<Wo
       draftJobDir: draftJob.jobDir,
       reviewJobDir: reviewJob.jobDir,
       sourcePath: draftManifest.sourcePath,
+      sourceOwnership: draftManifest.sourceOwnership,
       mode: draftManifest.mode,
     },
   });
@@ -179,23 +190,4 @@ function buildPromptPhase(
     lastMessagePath: path.join(jobDir, 'runtime', 'logs', `${basename}.last.md`),
     status: 'pending',
   };
-}
-
-function slugify(value: string): string {
-  const normalized = value
-    .toLowerCase()
-    .replace(/[^a-z0-9\u4e00-\u9fff]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-  return normalized || 'workflow-job';
-}
-
-function timestamp(): string {
-  const now = new Date();
-  const yyyy = now.getFullYear();
-  const mm = `${now.getMonth() + 1}`.padStart(2, '0');
-  const dd = `${now.getDate()}`.padStart(2, '0');
-  const hh = `${now.getHours()}`.padStart(2, '0');
-  const mi = `${now.getMinutes()}`.padStart(2, '0');
-  const ss = `${now.getSeconds()}`.padStart(2, '0');
-  return `${yyyy}${mm}${dd}-${hh}${mi}${ss}`;
 }

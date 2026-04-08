@@ -3,7 +3,7 @@ import path from 'node:path';
 import { buildMcpConfig } from '../config/mcp-registry.js';
 
 export async function mcpConfig(args: string[]): Promise<void> {
-  const surface = (readFlagValue(args, '--surface') ?? 'all') as 'all' | 'state' | 'memory' | 'trace' | 'team';
+  const surface = (readFlagValue(args, '--surface') ?? 'all') as 'all' | 'state' | 'memory' | 'trace' | 'team' | 'story';
   const nodePath = readFlagValue(args, '--node');
   const onxPath = readFlagValue(args, '--onx');
   const output = readFlagValue(args, '--output');

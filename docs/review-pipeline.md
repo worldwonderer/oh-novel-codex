@@ -35,6 +35,12 @@ Preferred machine-readable form:
 - store reviewer outputs under `.onx/reviews/cards/`
 - aggregate with `onx review-aggregate`
 
+The aggregate now also computes:
+
+- a fiction quality scorecard (`hook`, `character`, `pacing`, `ending`, `originality`, `continuity`)
+- a composite score
+- publish-readiness thresholds + failing dimensions
+
 ## Ship rule
 
 Do not ship if:

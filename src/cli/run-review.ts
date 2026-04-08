@@ -4,6 +4,7 @@ import { aggregateReviewJob, createReviewJob, executeReviewJob } from '../review
 export async function runReview(args: string[]): Promise<void> {
   const draft = readFlagValue(args, '--draft');
   const source = readFlagValue(args, '--source');
+  const sourceOwnership = readFlagValue(args, '--source-ownership') as 'third-party' | 'self-owned' | undefined;
   const projectDir = readFlagValue(args, '--project');
   const jobDir = readFlagValue(args, '--job');
   const jobName = readFlagValue(args, '--job-name');
@@ -39,6 +40,7 @@ export async function runReview(args: string[]): Promise<void> {
   const job = await createReviewJob({
     draftPath: draft,
     sourcePath: source,
+    sourceOwnership,
     projectDir,
     jobName,
     reviewers,

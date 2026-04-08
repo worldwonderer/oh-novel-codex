@@ -1,8 +1,9 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-export type OmxTeamSummary = {
+export type ExternalTeamSummary = {
   teamName: string;
+  runtimeKind: 'omx';
   workerCount: number;
   deadWorkers: number;
   taskCounts: {
@@ -20,10 +21,10 @@ export type OmxTeamSummary = {
     latestBody?: string;
   };
   workerStates: Record<string, number>;
-  leaderAttentionPending: boolean;
+  attentionPending: boolean;
 };
 
-export async function readOmxTeamSummaries(projectDir: string): Promise<OmxTeamSummary[]> {
+export async function readExternalTeamSummaries(projectDir: string): Promise<ExternalTeamSummary[]> {
   const teamsRoot = path.join(path.resolve(projectDir), '.omx', 'state', 'team');
   let entries: string[] = [];
   try {
@@ -43,10 +44,10 @@ export async function readOmxTeamSummaries(projectDir: string): Promise<OmxTeamS
     }
   }));
 
-  return summaries.filter((item): item is OmxTeamSummary => item !== null);
+  return summaries.filter((item): item is ExternalTeamSummary => item !== null);
 }
 
-async function readOneTeamSummary(teamDir: string, fallbackName: string): Promise<OmxTeamSummary> {
+async function readOneTeamSummary(teamDir: string, fallbackName: string): Promise<ExternalTeamSummary> {
   const config = await readJson(path.join(teamDir, 'config.json'));
   const teamName = typeof config?.name === 'string' ? config.name : fallbackName;
   const workerCount = Array.isArray(config?.workers) ? config.workers.length : 0;
@@ -109,6 +110,7 @@ async function readOneTeamSummary(teamDir: string, fallbackName: string): Promis
 
   return {
     teamName,
+    runtimeKind: 'omx',
     workerCount,
     deadWorkers,
     taskCounts,
@@ -119,7 +121,7 @@ async function readOneTeamSummary(teamDir: string, fallbackName: string): Promis
       latestBody: leaderMailboxLatestBody || undefined,
     },
     workerStates,
-    leaderAttentionPending: leaderMailboxUndelivered > 0 || taskCounts.blocked > 0 || deadWorkers > 0,
+    attentionPending: leaderMailboxUndelivered > 0 || taskCounts.blocked > 0 || deadWorkers > 0,
   };
 }
 

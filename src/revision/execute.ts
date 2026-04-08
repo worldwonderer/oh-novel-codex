@@ -5,6 +5,7 @@ import { promptOutputsMaterialized, runCodexPromptFile } from '../runtime/codex.
 import { renderRuntimeSummary } from '../runtime/status.js';
 import type { PromptExecutor, PromptExecutionResult, SandboxMode } from '../runtime/types.js';
 import { updateModeState } from '../state/mode-state.js';
+import { sliceNamedRange } from '../utils/phase-range.js';
 import { initializeRevisionState, markRevisionPhaseCompleted, markRevisionPhaseFailed, markRevisionPhaseRunning, readRevisionState, resetRevisionPhasesFrom, type RevisionPhase } from './state.js';
 import { verifyDraftLength } from '../verification/verifier.js';
 
@@ -39,7 +40,7 @@ export async function executeRevisionJob(options: ExecuteRevisionOptions): Promi
     await resetRevisionPhasesFrom(statePath, options.fromPhase);
   }
   const state = await readRevisionState(statePath);
-  const selected = slicePhases(state.phases, options.fromPhase, options.toPhase);
+  const selected = sliceNamedRange(state.phases, options.fromPhase, options.toPhase, 'revision phase');
   const phases: PromptExecutionResult[] = [];
 
   for (const phase of selected) {
@@ -177,15 +178,6 @@ export async function getRevisionStatus(jobDir: string): Promise<string> {
     lines.push(`| ${phase.name} | ${phase.status} | ${phase.startedAt ?? ''} | ${runtime} | ${phase.error ?? ''} |`);
   }
   return `${lines.join('\n')}\n`;
-}
-
-function slicePhases(phases: RevisionPhase[], fromPhase?: string, toPhase?: string): RevisionPhase[] {
-  const startIndex = fromPhase ? phases.findIndex((phase) => phase.name === fromPhase) : 0;
-  if (startIndex === -1) throw new Error(`Unknown from phase: ${fromPhase}`);
-  const endIndex = toPhase ? phases.findIndex((phase) => phase.name === toPhase) : phases.length - 1;
-  if (endIndex === -1) throw new Error(`Unknown to phase: ${toPhase}`);
-  if (endIndex < startIndex) throw new Error('to phase must come after from phase');
-  return phases.slice(startIndex, endIndex + 1);
 }
 
 function buildRevisionPhases(jobDir: string): RevisionPhase[] {

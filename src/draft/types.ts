@@ -1,9 +1,11 @@
 export type DraftMode = 'draft-longform' | 'zhihu-remix';
+export type SourceOwnership = 'third-party' | 'self-owned';
 
 export type DraftJobOptions = {
   brief?: string;
   briefPath?: string;
   sourcePath?: string;
+  sourceOwnership?: SourceOwnership;
   projectDir?: string;
   jobName?: string;
   mode?: DraftMode;

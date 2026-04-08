@@ -20,6 +20,7 @@
 | `onx hud [--project <dir>] [--json]` | Show a compact ONX runtime summary. |
 | `onx trace [--project <dir>] [--last N] [--json] [--summary]` | Inspect event trace logs or summaries. |
 | `onx status [--project <dir>] [--json]` | Show ONX mode and session state for the current project. |
+| `onx continuity-report [--project <dir>] [--draft <file>] [--json]` | Summarize story-memory continuity health. |
 | `onx verify-job --kind draft|review|workflow --job <dir>` | Run structural verification on a draft/review/workflow job. |
 | `onx version` | Print the current ONX package version. |
 
@@ -31,6 +32,9 @@
 | `onx note --read [--section priority|working|manual] [--project <dir>]` | Read the ONX notepad. |
 | `onx memory-read [--project <dir>]` | Read project memory JSON. |
 | `onx memory-write [--json <json> | --file <path>] [--merge] [--project <dir>]` | Write or merge project memory JSON. |
+| `onx story-list [--surface all|characters|world|relationships|timeline|voice|continuity] [--project <dir>] [--json]` | List story-memory collections or one collection. |
+| `onx story-read --collection <characters|world|relationships|timeline|voice|continuity> [--key <entry>] [--project <dir>] [--json]` | Read one story-memory entry or list a collection. |
+| `onx story-write --collection <characters|world|relationships|timeline|voice|continuity> --key <entry> [--text <content> | --file <path>] [--project <dir>]` | Write one story-memory entry. |
 | `onx state-read --mode <name> [--project <dir>]` | Inspect one mode state file. |
 | `onx state-clear --mode <name> [--project <dir>]` | Clear one mode state file. |
 
@@ -73,8 +77,8 @@
 
 | Command | Summary |
 | --- | --- |
-| `onx mcp-server [all|state|memory|trace|team]` | Launch a stdio MCP server for ONX surfaces. |
-| `onx mcp-config [--surface all|state|memory|trace|team] [--node <path>] [--onx <path>] [--output <file>]` | Generate MCP client config JSON for ONX servers. |
+| `onx mcp-server [all|state|memory|trace|team|story]` | Launch a stdio MCP server for ONX surfaces. |
+| `onx mcp-config [--surface all|state|memory|trace|team|story] [--node <path>] [--onx <path>] [--output <file>]` | Generate MCP client config JSON for ONX servers. |
 | `onx notify-hook [--project <dir>] [--auto-watch] [--ensure-watcher] [--resume] [--nudge-stalled] [--resume-stalled] [--resume-untracked] [--dry-run] [--follow-events]` | Consume one ONX event and optionally trigger watcher recovery. |
 | `onx watchdog [--project <dir>] [--resume] [--nudge-stalled] [--resume-stalled] [--stalled-grace-ms <n>] [--resume-untracked] [--untracked-grace-ms <n>] [--dry-run] [--json] [--watch] [--interval-ms <n>]` | Scan active jobs for orphaned or stalled phases. |
 | `onx fallback-watcher [--project <dir>] [--once] [--follow-events] [--resume] [--nudge-stalled] [--resume-stalled] [--resume-untracked] [--dry-run] [--interval-ms <n>] [--idle-backoff-ms <n>]` | Run a lightweight fallback watcher loop. |
@@ -95,13 +99,17 @@ Commands:
   onx hud [--project <dir>] [--json]
   onx trace [--project <dir>] [--last N] [--json] [--summary]
   onx status [--project <dir>] [--json]
-  onx mcp-server [all|state|memory|trace|team]
-  onx mcp-config [--surface all|state|memory|trace|team] [--node <path>] [--onx <path>] [--output <file>]
+  onx mcp-server [all|state|memory|trace|team|story]
+  onx mcp-config [--surface all|state|memory|trace|team|story] [--node <path>] [--onx <path>] [--output <file>]
   onx note --text <content> [--section priority|working|manual] [--project <dir>]
   onx note --read [--section priority|working|manual] [--project <dir>]
   onx notify-hook [--project <dir>] [--auto-watch] [--ensure-watcher] [--resume] [--nudge-stalled] [--resume-stalled] [--resume-untracked] [--dry-run] [--follow-events]
   onx memory-read [--project <dir>]
   onx memory-write [--json <json> | --file <path>] [--merge] [--project <dir>]
+  onx story-list [--surface all|characters|world|relationships|timeline|voice|continuity] [--project <dir>] [--json]
+  onx story-read --collection <characters|world|relationships|timeline|voice|continuity> [--key <entry>] [--project <dir>] [--json]
+  onx story-write --collection <characters|world|relationships|timeline|voice|continuity> --key <entry> [--text <content> | --file <path>] [--project <dir>]
+  onx continuity-report [--project <dir>] [--draft <file>] [--json]
   onx state-read --mode <name> [--project <dir>]
   onx state-clear --mode <name> [--project <dir>]
   onx verify-job --kind draft|review|workflow --job <dir>

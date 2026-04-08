@@ -2,17 +2,17 @@ import { readFallbackWatcherState } from '../runtime/fallback-watcher.js';
 import { readLeaderAttentionState } from '../runtime/attention.js';
 import { readTmuxPaneHealth } from '../runtime/tmux.js';
 import { listModeStates } from '../state/mode-state.js';
-import { readOmxTeamSummaries } from '../team/omx-visibility.js';
+import { readExternalTeamSummaries } from '../team/external-team-interop.js';
 import { scanActiveRuntimeHealth } from '../runtime/watchdog.js';
 
 export async function status(args: string[]): Promise<void> {
   const projectDir = readFlagValue(args, '--project') ?? process.cwd();
   const json = args.includes('--json');
-  const [states, watchdog, fallbackWatcher, omxTeams, attention] = await Promise.all([
+  const [states, watchdog, fallbackWatcher, externalTeams, attention] = await Promise.all([
     listModeStates(projectDir),
     scanActiveRuntimeHealth(projectDir),
     readFallbackWatcherState(projectDir),
-    readOmxTeamSummaries(projectDir),
+    readExternalTeamSummaries(projectDir),
     readLeaderAttentionState(projectDir),
   ]);
   const tmuxHealth = await Promise.all(
@@ -32,7 +32,7 @@ export async function status(args: string[]): Promise<void> {
   );
 
   if (json) {
-    process.stdout.write(`${JSON.stringify({ states, watchdog, fallbackWatcher, tmuxHealth: tmuxHealth.filter(Boolean), omxTeams, attention }, null, 2)}\n`);
+    process.stdout.write(`${JSON.stringify({ states, watchdog, fallbackWatcher, tmuxHealth: tmuxHealth.filter(Boolean), externalTeams, attention }, null, 2)}\n`);
     return;
   }
 
@@ -58,11 +58,11 @@ export async function status(args: string[]): Promise<void> {
     );
   }
 
-  if (omxTeams.length > 0) {
-    lines.push('', '## OMX Teams', '', '| Team | Attention | Workers | Tasks | Leader mailbox | Worker states |', '| --- | --- | --- | --- | --- | --- |');
-    for (const team of omxTeams) {
+  if (externalTeams.length > 0) {
+    lines.push('', '## External team interop', '', '| Runtime | Team | Attention | Workers | Tasks | Leader mailbox | Worker states |', '| --- | --- | --- | --- | --- | --- | --- |');
+    for (const team of externalTeams) {
       lines.push(
-        `| ${team.teamName} | ${team.leaderAttentionPending ? 'yes' : 'no'} | ${team.workerCount} (dead:${team.deadWorkers}) | p:${team.taskCounts.pending} ip:${team.taskCounts.in_progress} c:${team.taskCounts.completed} f:${team.taskCounts.failed} | ${team.leaderMailbox.undelivered}/${team.leaderMailbox.total} undelivered${team.leaderMailbox.latestFrom ? ` (${team.leaderMailbox.latestFrom})` : ''} | ${Object.entries(team.workerStates).map(([k, v]) => `${k}:${v}`).join(', ')} |`,
+        `| ${team.runtimeKind} | ${team.teamName} | ${team.attentionPending ? 'yes' : 'no'} | ${team.workerCount} (dead:${team.deadWorkers}) | p:${team.taskCounts.pending} ip:${team.taskCounts.in_progress} c:${team.taskCounts.completed} f:${team.taskCounts.failed} | ${team.leaderMailbox.undelivered}/${team.leaderMailbox.total} undelivered${team.leaderMailbox.latestFrom ? ` (${team.leaderMailbox.latestFrom})` : ''} | ${Object.entries(team.workerStates).map(([k, v]) => `${k}:${v}`).join(', ')} |`,
       );
     }
   }

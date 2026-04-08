@@ -52,6 +52,12 @@ ONX project state lives under `.onx/`:
 - `.onx/revisions/`
 - `.onx/workflows/`
 - `.onx/team/`
+- `.onx/characters/`
+- `.onx/world/`
+- `.onx/relationships/`
+- `.onx/timeline/`
+- `.onx/voice/`
+- `.onx/continuity/`
 - `.onx/state/`
 - `.onx/notes/`
 - `.onx/reports/`

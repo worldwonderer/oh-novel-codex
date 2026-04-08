@@ -10,8 +10,10 @@ ONX mirrors the spirit of `oh-my-codex`, but narrows the runtime around long-for
 - reusable **workflow skills** for intake, planning, drafting, rewriting, and polishing
 - a novel-oriented `AGENTS.md` orchestration brain
 - `.onx/` project state folders for plans, drafts, reviews, notes, and logs
+- story-memory collections for characters, world rules, relationships, timeline, voice, and continuity
 - a small CLI (`onx`) for setup, doctor, version, and project bootstrap
 - runtime event logging plus optional external notify hook support
+- fiction quality scorecards plus publish-readiness routing inside review/workflow aggregation
 - a generated prompt / skill catalog (`docs/skills.md`, `docs/prompts.md`, `docs/catalog.json`) so packaged assets stay in sync
 
 Codex remains the execution engine. ONX gives it a cleaner fiction workflow.
@@ -32,10 +34,19 @@ For rewrite-heavy work:
 $zhihu-remix "structurally remix this source story into a low-similarity 8k–12k finished draft"
 ```
 
+For continuing projects:
+
+```bash
+onx story-write --collection characters --key heroine --text "# Heroine"
+onx story-write --collection voice --key default --text "# Default voice"
+onx continuity-report --project .
+```
+
 ## Practical demo
 
 Want a concrete, end-to-end example? Start with the
-[Zhihu remix automation showcase](./docs/showcase-zhihu-remix-automation.md).
+[Zhihu remix automation showcase](./docs/showcase-zhihu-remix-automation.md)
+or the [story memory + quality gate showcase](./docs/showcase-story-memory-quality-gate.md).
 
 ## Quick start
 
@@ -76,6 +87,8 @@ Generated references:
 - [Skills catalog](./docs/skills.md)
 - [Prompts catalog](./docs/prompts.md)
 - [Catalog JSON contract](./docs/catalog.json)
+- [Story memory & continuity](./docs/story-memory.md)
+- [Quality engine](./docs/quality-engine.md)
 <!-- ONX:DOCS:END -->
 
 ## Commands
@@ -98,7 +111,7 @@ For exact flags, examples, and the full command surface, rely on the generated C
 
 ## Runtime safety / anti-hang controls
 
-ONX now ships OMX-style runtime guards for long Codex phases:
+ONX now ships long-running runtime guards for Codex phases, with design inspiration from OMX:
 
 - per-phase `.runtime.json` heartbeat files beside phase logs
 - stall detection based on both stdout/stderr **and** output artifact growth
@@ -247,7 +260,7 @@ onx team-start --workflow-job .onx/workflows/jobs/<job> --project .
 onx team-run --latest --project . --parallel --dry-run
 ```
 
-ONX team runtime is lane-state driven: it records lane progress under `.onx/team/jobs/<job>/runtime/state.json`, mirrors the current lane in `.onx/state/modes/team.json`, and emits `team.lane.*` / watchdog events into `.onx/logs/events.jsonl`. It does **not** currently implement OMX-style leader mailboxes, per-worker inboxes, or worker status registries inside `.onx/team/`; for that heavier coordination model, use OMX team orchestration around ONX rather than expecting ONX team jobs to behave like `.omx/state/team/...`.
+ONX team runtime is lane-state driven: it records lane progress under `.onx/team/jobs/<job>/runtime/state.json`, mirrors the current lane in `.onx/state/modes/team.json`, and emits `team.lane.*` / watchdog events into `.onx/logs/events.jsonl`. It does **not** currently implement OMX-style leader mailboxes, per-worker inboxes, or worker status registries inside `.onx/team/`; for that heavier mailbox-driven coordination model, treat external OMX runtimes as optional interop rather than expecting ONX team jobs to behave like `.omx/state/team/...`.
 
 If the reviewers write card files, aggregate them with:
 
